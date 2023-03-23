@@ -1,11 +1,12 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class CarDamage : MonoBehaviour 
 {
 	public float maxMoveDelta = 50.0f; // maximum distance one vertice moves per explosion (in meters)
 	public float maxCollisionStrength = 50.0f;
-	public float YforceDamp = 0.1f; // 0.0 - 1.0
+	//public float YforceDamp = 0.1f; // 0.0 - 1.0
 	public float demolutionRange = 0.5f;
 	public float impactDirManipulator = 0.0f;
 	public MeshFilter meshfilters;
@@ -22,17 +23,28 @@ public class CarDamage : MonoBehaviour
 	
 	public void OnCollisionEnter( Collision collision ) 
 	{
-		Vector3 colRelVel = collision.relativeVelocity;
-		colRelVel.y *= YforceDamp;
 		
-		Vector3 colPointToMe = transform.position - collision.contacts[0].point;
+		Vector3 colRelVel = collision.relativeVelocity;
+		int contactCount = collision.contactCount;
+		ContactPoint[] contactPoints = new ContactPoint[contactCount];
+		collision.GetContacts(contactPoints);
+
+		for (int i = 0; i < contactCount; i++)
+		{
+			Vector3 relColPoint = transform.position - contactPoints[i].point;
+			float colStrength = colRelVel.magnitude * Vector3.Dot(contactPoints[i].normal, relColPoint.normalized);
+			OnMeshForce(contactPoints[i].point, Mathf.Clamp01(colStrength*(contactCount-i/contactCount)/maxCollisionStrength));
+		}
+
+		//colRelVel.y *= YforceDamp;
+		
+		//Vector3 relColPoint = transform.position - collision.contacts[0].point;
 
 		// Dot = angle to collision point, frontal = highest damage, strip = lowest damage
-		float colStrength = colRelVel.magnitude * Vector3.Dot(collision.contacts[0].normal, colPointToMe.normalized);
+		//float colStrength = colRelVel.magnitude * Vector3.Dot(collision.contacts[0].normal, relColPoint.normalized);
 
-		OnMeshForce( collision.contacts[0].point, Mathf.Clamp01(colStrength/maxCollisionStrength) );
-		//Debug.DrawLine(collision.contacts[0].point, transform.position, Color.red);
-		//Debug.Break();
+		//OnMeshForce(collision.contacts[0].point, Mathf.Clamp01(colStrength/maxCollisionStrength));
+
 	}
 
 	// if called by SendMessage(), we only have 1 param
@@ -46,12 +58,12 @@ public class CarDamage : MonoBehaviour
         // force should be between 0.0 and 1.0
         force = Mathf.Clamp01(force);
 
+		List<Vector3> verts = new List<Vector3>();
+        meshfilters.mesh.GetVertices(verts);
 
-        Vector3 [] verts = meshfilters.mesh.vertices;
-
-		for (int i=0;i<verts.Length;i++)
-		{
+		for (int i = 0; i < verts.Count; i++){
 			Vector3 scaledVert = Vector3.Scale( verts[i], transform.localScale );
+			Debug.Log(scaledVert);
 			Vector3 vertWorldPos = meshfilters.transform.position + (meshfilters.transform.rotation * scaledVert);
 			Vector3 originToMeDir = vertWorldPos - originPos;
 			Vector3 flatVertToCenterDir = transform.position - vertWorldPos;
