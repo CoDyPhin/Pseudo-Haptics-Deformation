@@ -7,13 +7,21 @@ public class MeshDeformer : MonoBehaviour {
 	public float damping = 5f;
 
 	Mesh deformingMesh;
+	MeshFilter meshFilter;
 	Vector3[] originalVertices, displacedVertices;
 	Vector3[] vertexVelocities;
-
+	[SerializeField] MeshCollider col;
 	float uniformScale = 1f;
+	bool alreadyReset = false;
+	bool changed = false;
+	int colliderUpdateTreshold = 10;
+	Vector3 lastHitPoint = Vector3.zero;
 
 	void Start () {
-		deformingMesh = GetComponent<MeshFilter>().mesh;
+		if(damping <= 0) damping = 1;
+		if(springForce <= 0) springForce = 1;
+		meshFilter = GetComponent<MeshFilter>();
+		deformingMesh = meshFilter.mesh;
 		originalVertices = deformingMesh.vertices;
 		displacedVertices = new Vector3[originalVertices.Length];
 		for (int i = 0; i < originalVertices.Length; i++) {
@@ -22,13 +30,53 @@ public class MeshDeformer : MonoBehaviour {
 		vertexVelocities = new Vector3[originalVertices.Length];
 	}
 
-	void Update () {
+
+	void OnCollisionEnter(Collision collision) {
+		lastHitPoint = collision.GetContact(0).point;
+		lastHitPoint += collision.GetContact(0).normal * 0.005f;
+
+		//Debug.Log("Collider hitpoint: " + lastHitPoint);
+	}
+
+	void OnCollisionStay(Collision collision) {
+		//hit += collision.GetContact(0).normal * 0.1f;
+		AddDeformingForce(lastHitPoint, 5f);
+	}
+
+	void FixedUpdate () {
+		int changedVertexCount = 0;
 		uniformScale = transform.localScale.x;
+		if(!alreadyReset && !changed){
+			deformingMesh.vertices = originalVertices;
+			deformingMesh.RecalculateNormals();
+			col.sharedMesh = deformingMesh;
+			//Debug.Log("Reseted collider");
+			alreadyReset = true;
+		}
 		for (int i = 0; i < displacedVertices.Length; i++) {
 			UpdateVertex(i);
+			if(Vector3.Distance(displacedVertices[i], originalVertices[i]) >= 0.001f){
+				changedVertexCount++;
+			}
 		}
-		deformingMesh.vertices = displacedVertices;
-		deformingMesh.RecalculateNormals();
+		if(changedVertexCount >= 0.10f*displacedVertices.Length){
+			deformingMesh.vertices = displacedVertices;
+			deformingMesh.RecalculateNormals();
+			if(colliderUpdateTreshold > 0){
+				colliderUpdateTreshold--;
+				changedVertexCount = 0;
+				return;
+			}
+			colliderUpdateTreshold = 10;
+			col.sharedMesh = deformingMesh;
+			//Debug.Log("Changed collider");
+			changed = true;
+			alreadyReset = false;
+		}
+		else{
+			changed = false;
+		}
+		changedVertexCount = 0;
 	}
 
 	void UpdateVertex (int i) {
@@ -36,7 +84,9 @@ public class MeshDeformer : MonoBehaviour {
 		Vector3 displacement = displacedVertices[i] - originalVertices[i];
 		displacement *= uniformScale;
 		velocity -= displacement * springForce * Time.deltaTime;
-		velocity *= 1f - damping * Time.deltaTime;
+		float resistence = damping * Time.deltaTime;
+		if(resistence > 1f) resistence = 1f;
+		velocity *= 1f - resistence;
 		vertexVelocities[i] = velocity;
 		displacedVertices[i] += velocity * (Time.deltaTime / uniformScale);
 	}
@@ -52,6 +102,8 @@ public class MeshDeformer : MonoBehaviour {
 		Vector3 pointToVertex = displacedVertices[i] - point;
 		pointToVertex *= uniformScale;
 		float attenuatedForce = -force / (1f + pointToVertex.sqrMagnitude);
+		if(Mathf.Abs(attenuatedForce) < 0.01f)
+			attenuatedForce = 0;
 		float velocity = attenuatedForce * Time.deltaTime;
 		vertexVelocities[i] += pointToVertex.normalized * velocity;
 	}
