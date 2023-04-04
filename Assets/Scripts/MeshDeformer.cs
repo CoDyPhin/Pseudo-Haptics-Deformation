@@ -31,18 +31,6 @@ public class MeshDeformer : MonoBehaviour {
 	}
 
 
-	void OnCollisionEnter(Collision collision) {
-		lastHitPoint = collision.GetContact(0).point;
-		lastHitPoint += collision.GetContact(0).normal * 0.005f;
-
-		//Debug.Log("Collider hitpoint: " + lastHitPoint);
-	}
-
-	void OnCollisionStay(Collision collision) {
-		//hit += collision.GetContact(0).normal * 0.1f;
-		AddDeformingForce(lastHitPoint, 5f);
-	}
-
 	void FixedUpdate () {
 		int changedVertexCount = 0;
 		uniformScale = transform.localScale.x;
@@ -93,6 +81,7 @@ public class MeshDeformer : MonoBehaviour {
 
 	public void AddDeformingForce (Vector3 point, float force) {
 		point = transform.InverseTransformPoint(point);
+		//Debug.Log("After inverse transform: " + point);
 		for (int i = 0; i < displacedVertices.Length; i++) {
 			AddForceToVertex(i, point, force);
 		}

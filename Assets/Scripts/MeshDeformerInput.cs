@@ -21,11 +21,18 @@ public class MeshDeformerInput : MonoBehaviour {
 		// add rigidbody and colliders to the cilinders
 		cilinder1.AddComponent<Rigidbody>();
 		cilinder1.GetComponent<Rigidbody>().useGravity = false;
+		// make the body kinematic
+		//cilinder1.GetComponent<Rigidbody>().isKinematic = true;
 		cilinder2.AddComponent<Rigidbody>();
 		cilinder2.GetComponent<Rigidbody>().useGravity = false;
+		// make the body kinematic
+		//cilinder2.GetComponent<Rigidbody>().isKinematic = true;
 		// freeze rotation
 		cilinder1.GetComponent<Rigidbody>().constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
 		cilinder2.GetComponent<Rigidbody>().constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
+		// make the collider trigger
+		cilinder1.GetComponent<CapsuleCollider>().isTrigger = true;
+		cilinder2.GetComponent<CapsuleCollider>().isTrigger = true;
 	}
 
 	void Update () {
@@ -34,8 +41,11 @@ public class MeshDeformerInput : MonoBehaviour {
 		}
 		// add forces to move the cilinders using the arrow keys
 		if (Input.GetKey(KeyCode.UpArrow)) {
-			cilinder1.GetComponent<Rigidbody>().AddForce(new Vector3(0, 1, 0));
-			cilinder2.GetComponent<Rigidbody>().AddForce(new Vector3(0, 1, 0));
+			//cilinder1.GetComponent<Rigidbody>().AddForce(new Vector3(0f, 0.001f, 0f));
+			//cilinder2.GetComponent<Rigidbody>().AddForce(new Vector3(0f, 0.001f, 0f));
+			//change the transform position
+			cilinder1.transform.position += new Vector3(0, 0.01f, 0);
+			cilinder2.transform.position += new Vector3(0, 0.01f, 0);
 		}
 		else{
 			cilinder1.GetComponent<Rigidbody>().velocity = Vector3.zero;
@@ -43,27 +53,10 @@ public class MeshDeformerInput : MonoBehaviour {
 
 		}
 		if (Input.GetKey(KeyCode.DownArrow)) {
-			cilinder1.GetComponent<Rigidbody>().AddForce(new Vector3(0, -1, 0));
-			cilinder2.GetComponent<Rigidbody>().AddForce(new Vector3(0, -1, 0));
-		}
-		else{
-			cilinder1.GetComponent<Rigidbody>().velocity = Vector3.zero;
-			cilinder2.GetComponent<Rigidbody>().velocity = Vector3.zero;
-
-		}
-		if (Input.GetKey(KeyCode.LeftArrow)) {
-			cilinder1.GetComponent<Rigidbody>().AddForce(new Vector3(-1, 0, 0));
-			cilinder2.GetComponent<Rigidbody>().AddForce(new Vector3(-1, 0, 0));
-
-		}
-		else{
-			cilinder1.GetComponent<Rigidbody>().velocity = Vector3.zero;
-			cilinder2.GetComponent<Rigidbody>().velocity = Vector3.zero;
-
-		}
-		if (Input.GetKey(KeyCode.RightArrow)) {
-			cilinder1.GetComponent<Rigidbody>().AddForce(new Vector3(1, 0, 0));
-			cilinder2.GetComponent<Rigidbody>().AddForce(new Vector3(-1, 0, 0));
+			//cilinder1.GetComponent<Rigidbody>().AddForce(new Vector3(0f, -0.001f, 0f));
+			//cilinder2.GetComponent<Rigidbody>().AddForce(new Vector3(0f, -0.001f, 0f));
+			cilinder1.transform.position += new Vector3(0, -0.01f, 0);
+			cilinder2.transform.position += new Vector3(0, -0.01f, 0);
 		}
 		else{
 			cilinder1.GetComponent<Rigidbody>().velocity = Vector3.zero;
@@ -80,7 +73,7 @@ public class MeshDeformerInput : MonoBehaviour {
 			if (deformer) {
 				Vector3 point = hit.point;
 				point += hit.normal * forceOffset;
-				//Debug.Log("RayCast point: " + point);
+				Debug.Log("RayCast point: " + point);
 				deformer.AddDeformingForce(point, force);
 			}
 		}
